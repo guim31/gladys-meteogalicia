@@ -31,16 +31,20 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+index.js                          SDK wiring only: registerHandlers(gladys), connect()
+src/app.js                        handlers: scan, poll fallback, device created, actions, widget, config
+src/service.js                    setup (house/coordinates, station, municipality), refresh cycle, states, trigger, status
+src/poller.js                     the container's own refresh timer (Gladys#3198), onPoll as fallback
+src/devices.js                    the two devices (station, concello): features and states
+src/meteogalicia/client.js        HTTP client of the MeteoGalicia JSON services (public ids only)
+src/meteogalicia/model.js         pure parsers: stations, 10-minute reading, municipalities, forecast, warning levels
+src/widgets.js                    dashboard widget "weather" (pure content builder)
+src/i18n.js                       every produced text, en/fr/de/es
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+src/store.js, src/issues.js       /data/state.json (warning levels announced), failures logged once
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (same sections)
+test/                             node --test, against the SDK's fake Gladys and the real answers of test/fixtures
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -259,3 +263,32 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## MeteoGalicia (propre à cette intégration)
+
+- Services JSON publics de `servizos.meteogalicia.gal/mgrss`, sans clé, vérifiés le 22/11/2026 :
+  `observacion/listaEstacionsMeteo.action` (155 stations : id numérique, position, commune en
+  majuscules), `observacion/ultimos10minEstacionsMeteo.action?idEst=` (dernière mesure),
+  `observacion/observacionConcellos.action` (les 313 communes, sans position),
+  `predicion/jsonPredConcellos.action?idConc=` (prévision par commune, code INE) et
+  `predicion/adversos/jsonConcellosNivelMax.action?idConcello=&dia=-1` (niveau d'avis maximal par
+  jour, 0 à 3, aujourd'hui et les 2 jours suivants). Documentation officielle :
+  `meteogalicia.gal/datosred/infoweb/meteo/docs/rss/JSON_Pred_Concello_gl.pdf` (codes de ciel en
+  annexe II, communes en annexe I).
+- **-9999 = valeur absente** partout. `instanteLecturaUTC` est en UTC sans suffixe `Z`.
+  `dataPredicion` est un jour local. Codes de ciel 1xx (jour) et 2xx (nuit) : même ciel, `% 100`.
+- Une station ou une commune inconnue répond **HTTP 200** avec une liste vide ou
+  `{"predConcello": null}` : c'est au code de lever l'erreur.
+- `lnCodigoValidacion` : seul 1 (valeur d'origine valide) est publié. Les codes 2, 3 et 9 existent
+  (quelques mesures par jour) ; leur sens exact n'est pas documenté publiquement.
+- Les noms de communes diffèrent entre services (« A ARNOIA » dans la liste des stations,
+  « Arnoia » dans celle des communes ; « de Cangas ») : `findConcello` compare sans accent ni
+  article. Les 155 communes des stations sont toutes retrouvées (test).
+- **Détail des avis** (`jsonAvisosConcellos.action`, phénomène et heures) : format non vérifié, aucun
+  avis en cours le 22/11 et pas de spécification publique trouvée ; non utilisé. Le niveau maximal
+  par jour suffit au déclencheur. À reprendre avec une vraie réponse.
+- Le déclencheur `warning_raised` mémorise par **date** (jour galicien, `Europe/Madrid`) le niveau
+  déjà annoncé, et repart d'une ligne de base quand la commune change.
+- Le vieux `nivelAviso` de `jsonPredConcellos` vaut `null` : non utilisé.
+- Bibliothèque de l'intégration HACS (`meteogalicia-api`) : GPLv3, non reprise (seules les adresses
+  publiques des services ont servi de piste).

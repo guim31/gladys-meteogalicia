@@ -1,8 +1,8 @@
 {
-  "name": "gladys-integration-template-js",
+  "name": "gladys-meteogalicia",
   "version": "1.0.0",
   "private": true,
-  "description": "Official starter template to build an external integration for Gladys Assistant with the JavaScript SDK.",
+  "description": "Galician weather from MeteoGalicia (Xunta de Galicia) for Gladys Assistant: nearest station, municipal forecast and warning levels.",
   "type": "module",
   "main": "index.js",
   "scripts": {

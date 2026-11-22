@@ -2,3 +2,10 @@ node_modules/
 package-lock.json
 /data/
 *.log
+
+# Real MeteoGalicia answers, kept byte for byte.
+test/fixtures/stations.json
+test/fixtures/concellos.json
+test/fixtures/observation-*.json
+test/fixtures/forecast-*.json
+test/fixtures/warning-levels-*.json

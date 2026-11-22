@@ -30,6 +30,13 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+What the integration handles: the position of the Gladys house (read through the `location`
+permission), used only inside the container to pick the nearest station. It is never sent
+anywhere: the integration downloads the public list of stations from `servizos.meteogalicia.gal`
+(HTTPS, no account, no key) and only sends public ids (a station, a municipality) in its
+requests; it never writes the position to the logs. `/data/state.json` keeps only the municipality
+id and the warning levels already announced to the scenes. There is no secret to store.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
 and the third-party services and devices the integration talks to.
