@@ -1,177 +1,538 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "MeteoGalicia",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Galician weather from MeteoGalicia: nearest station, municipal forecast and warning levels.",
+    "fr": "Météo de Galice par MeteoGalicia : station la plus proche, prévisions communales, niveaux d'avis.",
+    "de": "Wetter Galiciens von MeteoGalicia: nächste Station, Gemeindevorhersage und Warnstufen.",
+    "es": "Tiempo de Galicia de MeteoGalicia: estación más cercana, previsión municipal y niveles de aviso."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
-  "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "docker_image": "ghcr.io/guim31/gladys-meteogalicia:1.0.0",
+  "gladys_version": ">=5.3.0",
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-meteogalicia/main/cover.png",
+  "categories": ["environment"],
+  "countries": ["ES"],
+  "transports": ["cloud"],
+  "location": true,
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "MeteoGalicia",
+        "fr": "MeteoGalicia",
+        "de": "MeteoGalicia",
+        "es": "MeteoGalicia"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Open data of MeteoGalicia, the weather service of the Xunta de Galicia: no account, no key. By default, the integration uses the position of your first Gladys house: the nearest automatic station, and the forecast and warning levels of that station's municipality. Not affiliated with MeteoGalicia or the Xunta de Galicia.",
+        "fr": "Données ouvertes de MeteoGalicia, le service météo de la Xunta de Galicia : ni compte, ni clé. Par défaut, l'intégration prend la position de votre première maison Gladys : la station automatique la plus proche, puis les prévisions et niveaux d'avis de la commune de cette station. Sans lien avec MeteoGalicia ni la Xunta de Galicia.",
+        "de": "Offene Daten von MeteoGalicia, dem Wetterdienst der Xunta de Galicia: kein Konto, kein Schlüssel. Standardmäßig nutzt die Integration die Position deines ersten Gladys-Zuhauses: die nächste automatische Station sowie Vorhersage und Warnstufen der Gemeinde dieser Station. Keine Verbindung zu MeteoGalicia oder der Xunta de Galicia.",
+        "es": "Datos abiertos de MeteoGalicia, el servicio meteorológico de la Xunta de Galicia: sin cuenta ni clave. Por defecto, la integración usa la posición de su primera casa de Gladys: la estación automática más cercana, y la previsión y los niveles de aviso del municipio de esa estación. Sin relación con MeteoGalicia ni con la Xunta de Galicia."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://www.meteogalicia.gal/",
+          "label": {
+            "en": "MeteoGalicia website",
+            "fr": "Site de MeteoGalicia",
+            "de": "Website von MeteoGalicia",
+            "es": "Web de MeteoGalicia"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "house",
+      "type": "select",
+      "source": "houses",
+      "label": {
+        "en": "House",
+        "fr": "Maison",
+        "de": "Zuhause",
+        "es": "Casa"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "description": {
+        "en": "The house whose position is used. Empty: the first house with a position.",
+        "fr": "La maison dont la position est utilisée. Vide : la première maison qui a une position.",
+        "de": "Das Zuhause, dessen Position genutzt wird. Leer: das erste Zuhause mit Position.",
+        "es": "La casa cuya posición se usa. Vacío: la primera casa con posición."
+      },
+      "required": false
+    },
+    {
+      "key": "latitude",
+      "type": "string",
+      "label": {
+        "en": "Latitude (optional)",
+        "fr": "Latitude (facultatif)",
+        "de": "Breitengrad (optional)",
+        "es": "Latitud (opcional)"
+      },
+      "description": {
+        "en": "To use another place than a house. Takes precedence over the house.",
+        "fr": "Pour un autre lieu qu'une maison. Prioritaire sur la maison.",
+        "de": "Für einen anderen Ort als ein Zuhause. Hat Vorrang vor dem Zuhause.",
+        "es": "Para otro lugar que una casa. Tiene prioridad sobre la casa."
+      },
+      "placeholder": {
+        "en": "e.g. 43.37",
+        "fr": "ex. 43,37",
+        "de": "z. B. 43,37",
+        "es": "p. ej. 43,37"
+      },
+      "required": false,
+      "default": ""
     },
     {
       "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "type": "string",
+      "label": {
+        "en": "Longitude (optional)",
+        "fr": "Longitude (facultatif)",
+        "de": "Längengrad (optional)",
+        "es": "Longitud (opcional)"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "placeholder": {
+        "en": "e.g. -8.40",
+        "fr": "ex. -8,40",
+        "de": "z. B. -8,40",
+        "es": "p. ej. -8,40"
+      },
+      "required": false,
+      "default": ""
     },
     {
-      "key": "unit",
-      "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "key": "station_id",
+      "type": "string",
+      "label": {
+        "en": "Weather station (optional)",
+        "fr": "Station météo (facultatif)",
+        "de": "Wetterstation (optional)",
+        "es": "Estación meteorológica (opcional)"
+      },
+      "description": {
+        "en": "Id of a MeteoGalicia automatic station. Empty: the nearest one. The action below lists them.",
+        "fr": "Identifiant d'une station automatique de MeteoGalicia. Vide : la plus proche. L'action ci-dessous les liste.",
+        "de": "ID einer automatischen MeteoGalicia-Station. Leer: die nächste. Die Aktion unten listet sie auf.",
+        "es": "Identificador de una estación automática de MeteoGalicia. Vacío: la más cercana. La acción de abajo las lista."
+      },
+      "placeholder": {
+        "en": "e.g. 10157",
+        "fr": "ex. 10157",
+        "de": "z. B. 10157",
+        "es": "p. ej. 10157"
+      },
       "required": false,
-      "default": "celsius",
+      "default": ""
+    },
+    {
+      "key": "concello",
+      "type": "string",
+      "label": {
+        "en": "Municipality (optional)",
+        "fr": "Commune (facultatif)",
+        "de": "Gemeinde (optional)",
+        "es": "Municipio (opcional)"
+      },
+      "description": {
+        "en": "INE code or name of a Galician municipality, for the forecast and warnings. Empty: that of the station.",
+        "fr": "Code INE ou nom d'une commune galicienne, pour les prévisions et avis. Vide : celle de la station.",
+        "de": "INE-Code oder Name einer galicischen Gemeinde, für Vorhersage und Warnungen. Leer: die der Station.",
+        "es": "Código INE o nombre de un municipio gallego, para la previsión y los avisos. Vacío: el de la estación."
+      },
+      "placeholder": {
+        "en": "e.g. 15030 or A Coruña",
+        "fr": "ex. 15030 ou A Coruña",
+        "de": "z. B. 15030 oder A Coruña",
+        "es": "p. ej. 15030 o A Coruña"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "refresh_minutes",
+      "type": "select",
+      "label": {
+        "en": "Refresh interval",
+        "fr": "Fréquence de rafraîchissement",
+        "de": "Aktualisierungsintervall",
+        "es": "Intervalo de actualización"
+      },
+      "description": {
+        "en": "The stations report every 10 minutes.",
+        "fr": "Les stations publient toutes les 10 minutes.",
+        "de": "Die Stationen melden alle 10 Minuten.",
+        "es": "Las estaciones publican cada 10 minutos."
+      },
+      "required": false,
+      "default": "10",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "10",
+          "label": {
+            "en": "10 minutes",
+            "fr": "10 minutes",
+            "de": "10 Minuten",
+            "es": "10 minutos"
+          }
+        },
+        {
+          "value": "15",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "60 minutes",
+            "fr": "60 minutes",
+            "de": "60 Minuten",
+            "es": "60 minutos"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the feature names",
+        "fr": "Langue des noms de fonctionnalités",
+        "de": "Sprache der Funktionsnamen",
+        "es": "Idioma de los nombres de funciones"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Used when the devices are created, and for the scene event texts.",
+        "fr": "Utilisée à la création des appareils, et pour les textes des événements de scène.",
+        "de": "Wird beim Anlegen der Geräte und für die Texte der Szenen-Ereignisse genutzt.",
+        "es": "Se usa al crear los dispositivos y para los textos de los eventos de escena."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "list_stations",
+      "label": {
+        "en": "List the nearest stations",
+        "fr": "Lister les stations proches",
+        "de": "Nächste Stationen anzeigen",
+        "es": "Listar las estaciones cercanas"
+      },
       "timeout_seconds": 30
     },
     {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "check_connection",
+      "label": {
+        "en": "Check the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung prüfen",
+        "es": "Comprobar la conexión"
+      },
+      "timeout_seconds": 60
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "warning_raised",
+      "label": {
+        "en": "MeteoGalicia warning level raised",
+        "fr": "Niveau d'avis MeteoGalicia relevé",
+        "de": "MeteoGalicia-Warnstufe erhöht",
+        "es": "Nivel de aviso de MeteoGalicia elevado"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "The highest warning level announced by MeteoGalicia for the municipality rose (to yellow, orange or red), for today, tomorrow or the day after. Fires as soon as it is announced.",
+        "fr": "Le niveau d'avis le plus élevé annoncé par MeteoGalicia pour la commune a monté (jaune, orange ou rouge), pour aujourd'hui, demain ou après-demain. Se déclenche dès l'annonce.",
+        "de": "Die höchste von MeteoGalicia für die Gemeinde angekündigte Warnstufe ist gestiegen (gelb, orange oder rot), für heute, morgen oder übermorgen. Löst bei der Ankündigung aus.",
+        "es": "El nivel de aviso más alto anunciado por MeteoGalicia para el municipio ha subido (amarillo, naranja o rojo), para hoy, mañana o pasado mañana. Se activa en cuanto se anuncia."
       },
       "fields": [
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "key": "level",
+          "type": "multi_select",
+          "label": {
+            "en": "Levels",
+            "fr": "Niveaux",
+            "de": "Stufen",
+            "es": "Niveles"
+          },
+          "options": [
+            {
+              "value": "yellow",
+              "label": {
+                "en": "Yellow",
+                "fr": "Jaune",
+                "de": "Gelb",
+                "es": "Amarillo"
+              }
+            },
+            {
+              "value": "orange",
+              "label": {
+                "en": "Orange",
+                "fr": "Orange",
+                "de": "Orange",
+                "es": "Naranja"
+              }
+            },
+            {
+              "value": "red",
+              "label": {
+                "en": "Red",
+                "fr": "Rouge",
+                "de": "Rot",
+                "es": "Rojo"
+              }
+            }
+          ]
         },
         {
-          "key": "target",
+          "key": "day",
           "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "label": {
+            "en": "Days",
+            "fr": "Jours",
+            "de": "Tage",
+            "es": "Días"
+          },
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "today",
+              "label": {
+                "en": "Today",
+                "fr": "Aujourd'hui",
+                "de": "Heute",
+                "es": "Hoy"
+              }
+            },
+            {
+              "value": "tomorrow",
+              "label": {
+                "en": "Tomorrow",
+                "fr": "Demain",
+                "de": "Morgen",
+                "es": "Mañana"
+              }
+            },
+            {
+              "value": "day_after",
+              "label": {
+                "en": "Day after tomorrow",
+                "fr": "Après-demain",
+                "de": "Übermorgen",
+                "es": "Pasado mañana"
+              }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "level_label",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
-        }
-      ]
-    }
-  ],
-  "scene_actions": [
-    {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
-      },
-      "timeout_seconds": 15,
-      "fields": [
+          "label": {
+            "en": "Level",
+            "fr": "Niveau",
+            "de": "Stufe",
+            "es": "Nivel"
+          }
+        },
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ],
-      "outputs": [
+          "key": "level_number",
+          "type": "number",
+          "label": {
+            "en": "Level (1 to 3)",
+            "fr": "Niveau (1 à 3)",
+            "de": "Stufe (1 bis 3)",
+            "es": "Nivel (1 a 3)"
+          }
+        },
         {
-          "key": "signalled",
+          "key": "level",
+          "type": "string",
+          "label": {
+            "en": "Level key (yellow…)",
+            "fr": "Clé du niveau (yellow…)",
+            "de": "Stufenschlüssel (yellow…)",
+            "es": "Clave del nivel (yellow…)"
+          }
+        },
+        {
+          "key": "day_label",
+          "type": "string",
+          "label": {
+            "en": "Day",
+            "fr": "Jour",
+            "de": "Tag",
+            "es": "Día"
+          }
+        },
+        {
+          "key": "day",
+          "type": "string",
+          "label": {
+            "en": "Day key (today…)",
+            "fr": "Clé du jour (today…)",
+            "de": "Tagesschlüssel (today…)",
+            "es": "Clave del día (today…)"
+          }
+        },
+        {
+          "key": "date",
+          "type": "string",
+          "label": {
+            "en": "Date",
+            "fr": "Date",
+            "de": "Datum",
+            "es": "Fecha"
+          }
+        },
+        {
+          "key": "is_update",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": {
+            "en": "Raised from a lower warning",
+            "fr": "Relevé depuis un avis plus bas",
+            "de": "Von einer niedrigeren Warnung erhöht",
+            "es": "Subido desde un aviso más bajo"
+          }
+        },
+        {
+          "key": "concello",
+          "type": "string",
+          "label": {
+            "en": "Municipality",
+            "fr": "Commune",
+            "de": "Gemeinde",
+            "es": "Municipio"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "weather",
+      "label": {
+        "en": "MeteoGalicia weather",
+        "fr": "Météo MeteoGalicia",
+        "de": "MeteoGalicia-Wetter",
+        "es": "Tiempo MeteoGalicia"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Station readings, coming days, warning levels and the forecast of today and tomorrow.",
+        "fr": "Mesures de la station, prochains jours, niveaux d'avis, prévisions du jour et du lendemain.",
+        "de": "Messwerte der Station, nächste Tage, Warnstufen, Vorhersage für heute und morgen.",
+        "es": "Datos de la estación, próximos días, niveles de aviso y previsión de hoy y mañana."
+      },
+      "icon": "cloud",
+      "settings": [
+        {
+          "key": "hide",
+          "type": "multi_select",
+          "label": {
+            "en": "Blocks to hide",
+            "fr": "Blocs à masquer",
+            "de": "Auszublendende Blöcke",
+            "es": "Bloques a ocultar"
+          },
+          "required": false,
+          "options": [
+            {
+              "value": "station",
+              "label": {
+                "en": "Station readings",
+                "fr": "Mesures de la station",
+                "de": "Messwerte der Station",
+                "es": "Datos de la estación"
+              }
+            },
+            {
+              "value": "chart",
+              "label": {
+                "en": "Coming days chart",
+                "fr": "Graphique des prochains jours",
+                "de": "Diagramm der nächsten Tage",
+                "es": "Gráfico de los próximos días"
+              }
+            },
+            {
+              "value": "warnings",
+              "label": {
+                "en": "Warning levels",
+                "fr": "Niveaux d'avis",
+                "de": "Warnstufen",
+                "es": "Niveles de aviso"
+              }
+            },
+            {
+              "value": "forecast",
+              "label": {
+                "en": "Today and tomorrow",
+                "fr": "Aujourd'hui et demain",
+                "de": "Heute und morgen",
+                "es": "Hoy y mañana"
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -1,67 +1,179 @@
-# Template de démonstration
+# MeteoGalicia
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+La météo officielle de la **Galice** (Espagne) dans Gladys, par **MeteoGalicia**, le service météo
+de la **Xunta de Galicia** : les mesures de la **station météo automatique** la plus proche toutes
+les 10 minutes, les **prévisions quotidiennes** d'une commune (concello), et ses **niveaux d'avis**
+pour aujourd'hui, demain et après-demain.
 
-## Ce que vous obtenez
+Données ouvertes : ni compte, ni clé d'API. Cette intégration n'a aucun lien avec MeteoGalicia ni
+la Xunta de Galicia.
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Présentation
+
+- **Deux appareils** : la station la plus proche (température, humidité, pression, vent, rafales,
+  pluie : ce que mesure la station) et une commune (prévisions du jour et du lendemain, indice UV,
+  niveaux d'avis).
+- **Un déclencheur de scène**, « Niveau d'avis MeteoGalicia relevé », dès que MeteoGalicia relève
+  le niveau d'avis de la commune pour aujourd'hui, demain ou après-demain.
+- **Un widget** de tableau de bord avec les mesures, les minimales et maximales des prochains jours,
+  les niveaux d'avis et les prévisions du jour et du lendemain.
+- **Lecture seule** : MeteoGalicia est une source de données, rien n'est piloté.
+
+## Prérequis
+
+- Gladys **5.3.0** ou plus récent.
+- Un lieu en **Galice** : l'une de ses 313 communes, à moins de 40 km d'une station MeteoGalicia.
+- Votre maison Gladys placée sur la carte (**Paramètres → Maisons**), ou des coordonnées, une
+  station ou une commune saisies dans la configuration.
+- Gladys doit accéder à Internet (`servizos.meteogalicia.gal`).
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+Installez l'intégration depuis **Intégrations → Installer depuis GitHub** (ou depuis le store), puis
+ouvrez sa configuration. Tous les champs sont facultatifs : par défaut, l'intégration prend la
+position de votre première maison placée, la station la plus proche, la commune de cette station,
+et se rafraîchit toutes les 10 minutes.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+| Champ                              | Usage                                                                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Maison                             | La maison dont la position est utilisée. Vide : la première maison qui a une position.                                             |
+| Latitude, Longitude                | Un autre lieu qu'une maison, par exemple `43,37` et `-8,40` (le point marche aussi). Les deux, ou aucune.                          |
+| Station météo                      | L'identifiant d'une station MeteoGalicia, par exemple `10157` (A Coruña). Vide : la plus proche.                                   |
+| Commune                            | Code INE (`15030`) ou nom (`A Coruña`) de la commune des prévisions et avis. Vide : celle de la station.                           |
+| Fréquence de rafraîchissement      | 10, 15, 30 ou 60 minutes. Les stations publient toutes les 10 minutes.                                                             |
+| Langue des noms de fonctionnalités | Langue des noms de fonctionnalités (fixée à la création des appareils) et des textes des événements de scène. Français par défaut. |
 
-## Actions
+La position de la maison est lue grâce à la permission `location` de Gladys, affichée à
+l'installation. Elle **ne quitte jamais Gladys** : l'intégration télécharge la liste des stations et
+choisit elle-même la plus proche ; MeteoGalicia ne reçoit que des identifiants publics (une station,
+une commune). Elle n'est jamais écrite dans les journaux non plus.
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+La commune par défaut est celle **de la station la plus proche** : MeteoGalicia ne publie pas la
+position des communes. Si vous habitez près d'une limite, saisissez votre commune.
 
-## Scènes
+Ouvrez ensuite l'onglet **Découverte** de l'intégration et ajoutez les deux appareils à Gladys.
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+## Appareils
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+### Station
 
-## Tableau de bord
+Le nom est « MeteoGalicia » suivi du nom de la station. Valeurs de la dernière mesure sur
+10 minutes :
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+| Fonctionnalité              | Unité | Remarque                                                   |
+| --------------------------- | ----- | ---------------------------------------------------------- |
+| Température                 | °C    | Température de l'air, à 1,5 m                              |
+| Point de rosée              | °C    |                                                            |
+| Humidité                    | %     |                                                            |
+| Pression (niveau de la mer) | hPa   | Pression ramenée au niveau de la mer, comme les prévisions |
+| Vitesse du vent             | km/h  | Moyenne des 10 minutes, à 10 m (ou 2 m)                    |
+| Rafales                     | km/h  | Plus forte rafale des 10 minutes                           |
+| Direction du vent           | °     | D'où vient le vent : 0 = nord, 90 = est                    |
+| Intensité de pluie          | mm/h  | Pluie des 10 dernières minutes, en débit horaire (× 6)     |
+
+Une station ne reçoit que les fonctionnalités de ce qu'elle mesure (environ un tiers des stations
+n'ont ni vent ni pression) : une fonctionnalité ajoutée est gardée, même si la station cesse de
+l'envoyer. Seules les valeurs que MeteoGalicia marque comme valides sont publiées. Une station
+muette depuis plus de 3 heures n'est plus republiée comme actuelle.
+
+### Commune
+
+Le nom est « MeteoGalicia » suivi du nom de la commune. Ses prévisions quotidiennes et le niveau
+d'avis le plus élevé annoncé pour elle :
+
+| Fonctionnalité            | Unité  | Remarque                                                                    |
+| ------------------------- | ------ | --------------------------------------------------------------------------- |
+| Temps aujourd'hui         | texte  | Ciel le plus représentatif de la journée, par exemple « Averses faibles »   |
+| Minimale aujourd'hui      | °C     | Jours de Galice (Europe/Madrid)                                             |
+| Maximale aujourd'hui      | °C     |                                                                             |
+| Indice UV aujourd'hui     | indice | Indice UV maximal prévu                                                     |
+| Temps demain              | texte  |                                                                             |
+| Minimale demain           | °C     |                                                                             |
+| Maximale demain           | °C     |                                                                             |
+| Niveau d'avis aujourd'hui | 0 à 3  | Niveau le plus élevé du jour : 0 aucun, 1 jaune, 2 orange, 3 rouge          |
+| Niveau d'avis demain      | 0 à 3  |                                                                             |
+| Avis météo                | texte  | Les jours avec un avis, par exemple « Aujourd'hui: Jaune · Demain: Orange » |
+
+Les niveaux sont les plus élevés de toute la journée pour la commune, quel que soit le phénomène
+(vent, pluie, submersion, neige, chaleur…), tels que MeteoGalicia les publie par commune.
+
+## Widget
+
+**Météo MeteoGalicia** affiche, dans la langue et les unités du tableau de bord :
+
+- le nom de la commune (celui donné dans Gladys), puis la température, l'humidité, le vent et les
+  rafales de la station ;
+- les minimales et maximales des prochains jours (jusqu'à 4) ;
+- le niveau d'avis de chaque jour qui en a un, ou une ligne verte « Aucun » ;
+- le temps du jour et du lendemain, avec minimale, maximale et risque de pluie ;
+- la source et l'heure de la mesure.
+
+Le réglage **Blocs à masquer** masque les mesures de la station, le graphique, les niveaux d'avis
+ou les prévisions du jour et du lendemain.
+
+## Déclencheur de scène
+
+**Niveau d'avis MeteoGalicia relevé** se déclenche quand le niveau d'avis le plus élevé de la
+commune monte pour un jour (aujourd'hui, demain ou après-demain) : d'aucun à jaune, de jaune à
+orange… Une fois par jour et par niveau, dès l'annonce (un niveau qui redescend puis remonte le même jour ne le redéclenche pas). Un redémarrage ne le redéclenche pas, ni le
+lendemain quand « demain » devient « aujourd'hui ». Le tout premier démarrage (et le premier après un
+changement de commune) ne fait que noter les niveaux déjà annoncés.
+
+Filtres (vide = tous) : **Niveaux** (jaune, orange, rouge) et **Jours** (aujourd'hui, demain,
+après-demain).
+
+Informations transmises aux actions de la scène : niveau, niveau (1 à 3), clé du niveau, jour, clé
+du jour, date, relevé depuis un avis plus bas, commune. Par exemple, un message : `MeteoGalicia :
+avis {{triggerEvent.data.level_label}} {{triggerEvent.data.day_label}} à
+{{triggerEvent.data.concello}}`.
+
+## Actions de configuration
+
+- **Lister les stations proches** : les 8 stations les plus proches du lieu, avec identifiant,
+  commune, altitude et distance. Copiez un identifiant dans « Station météo » pour en choisir une
+  autre (une station de vallée convient souvent mieux qu'une plus proche sur un sommet).
+- **Tester la connexion** : lit toutes les sources tout de suite et dit ce qui a répondu : la
+  température de la station et son heure, la commune des prévisions, le niveau d'avis du jour.
+  Affiché en rouge si une source a échoué.
+
+## Exemples de scènes
+
+- **Tempête en vue** : déclencheur « Niveau d'avis MeteoGalicia relevé », niveaux « Orange » et
+  « Rouge » → fermer les volets, rentrer le store, envoyer un message avec le jour.
+- **Soleil fort** : chaque jour à 10 h, si « Indice UV aujourd'hui » est supérieur ou égal à 6 →
+  rappeler de mettre de la crème solaire aux enfants.
+- **Gel demain** : chaque soir à 20 h, si « Minimale demain » est sous 1 °C → prévenir de protéger
+  les plantes et le pare-brise.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« Aucun lieu »** : aucune maison n'a de position. Placez votre maison sur la carte dans
+  **Paramètres → Maisons**, ou saisissez des coordonnées, une station ou une commune.
+- **« Hors de Galice »** : le lieu est à plus de 40 km de toute station MeteoGalicia. Saisissez une
+  station ou une commune pour utiliser l'intégration malgré tout.
+- **« Ne fait pas partie des 313 »** : la commune saisie est inconnue. Saisissez son code INE à
+  5 chiffres (par exemple `15078` pour Saint-Jacques-de-Compostelle) ou son nom.
+- **« MeteoGalicia ne répond pas »** : Gladys n'accède pas à `servizos.meteogalicia.gal` ; les
+  valeurs seront mises à jour à son retour. Les journaux disent quelle source échoue, une fois, et
+  quand elle refonctionne.
+- **Une fonctionnalité manque sur la station** : la station ne la mesure pas. Choisissez une autre
+  station avec **Lister les stations proches**.
+- **Plus de détails** : passez la variable `LOG_LEVEL` du conteneur à `debug`.
+
+## Limites
+
+- **Données** : données ouvertes de MeteoGalicia (Xunta de Galicia), réutilisées avec la mention de
+  la source (« Source : MeteoGalicia – Xunta de Galicia », affichée par le widget).
+- **Requêtes** : environ 13 par heure au rythme par défaut (station et niveaux d'avis à chaque
+  rafraîchissement, prévisions une fois par heure, listes des stations et des communes une fois par
+  jour). Les stations publient toutes les 10 minutes : un rythme plus rapide ne lirait rien de neuf.
+- Les avis sont le **niveau le plus élevé par jour et par commune** : le phénomène (vent, pluie,
+  côte…) et les heures exactes ne sont pas publiés par ce service.
+- Les prévisions sont quotidiennes (aujourd'hui et les 2 ou 3 jours suivants), sans prévision
+  horaire. Le rayonnement solaire et les températures du sol ne sont pas publiés en fonctionnalités
+  (pas d'unité correspondante dans Gladys).
+- Une station et une commune par installation.
+- Les noms des fonctionnalités sont fixés à la création des appareils : changer la langue ensuite ne
+  les renomme pas.
+- Développée sans spécification officielle de chaque service : MeteoGalicia peut les modifier sans
+  préavis. Vos retours sont les bienvenus.
