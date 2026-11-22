@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-22
+
 ### Added
 
 - The official weather of Galicia from MeteoGalicia (Xunta de Galicia) open data, without account
@@ -26,3 +28,6 @@ the notes of the version's GitHub Release.
 - Configuration actions "List the nearest stations" and "Check the connection" (shown in red on
   failure).
 - English, French, German and Spanish.
+
+[Unreleased]: https://github.com/guim31/gladys-meteogalicia/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-meteogalicia/releases/tag/v1.0.0
