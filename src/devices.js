@@ -145,12 +145,7 @@ export function stationStates(gladys, station, reading) {
  * States of the municipality device.
  * @param {object} data `{ forecast?, levels? }`, each the last parsed answer
  */
-export function concelloStates(
-  gladys,
-  concello,
-  { forecast, levels },
-  { now, language },
-) {
+export function concelloStates(gladys, concello, { forecast, levels }, { now, language }) {
   const ids = gladys.externalIds(DEVICE_TYPES.CONCELLO, concello.id);
   const states = [];
   if (forecast) {
