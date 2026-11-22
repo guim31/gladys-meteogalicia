@@ -147,6 +147,7 @@ export function createService({ gladys, client, store, logger, getConfig, now })
    * at the next cycle); a configuration problem is in `target.problem`.
    */
   async function setup() {
+    const started = generation;
     const config = getConfig();
     if (config.stationIdInvalid) {
       target = nothing('stationIdInvalid');
@@ -213,6 +214,10 @@ export function createService({ gladys, client, store, logger, getConfig, now })
         features: stationFeatureKeys(station, observation),
       };
     }
+    if (started !== generation) {
+      // The configuration changed meanwhile: the next cycle sets up the new one.
+      return null;
+    }
     target = { station, concello, place, problem };
     logger.info(
       `Ready: ${station ? `station ${station.id}` : 'no station'}, ` +
@@ -241,13 +246,23 @@ export function createService({ gladys, client, store, logger, getConfig, now })
     // published again, and Gladys offers to update it.
     const missing = Object.keys(reading.values).filter((key) => !station.features.includes(key));
     if (missing.length > 0) {
-      station.features = stationFeatureKeys(station, {
+      const features = stationFeatureKeys(station, {
         values: Object.fromEntries([...station.features, ...missing].map((key) => [key, 0])),
       });
-      logger.info(`Station ${station.id} now measures ${missing.join(', ')}`);
-      await gladys.publishDiscoveredDevices(
-        buildDevices(gladys, { ...target, language: getConfig().language }),
-      );
+      try {
+        await gladys.publishDiscoveredDevices(
+          buildDevices(gladys, {
+            ...target,
+            station: { ...station, features },
+            language: getConfig().language,
+          }),
+        );
+        // Kept only once published: a refused publication is tried again.
+        station.features = features;
+        logger.info(`Station ${station.id} now measures ${missing.join(', ')}`);
+      } catch (err) {
+        logger.warn(`New station features not published (${err.message})`);
+      }
     }
   }
 
@@ -427,7 +442,13 @@ export function createService({ gladys, client, store, logger, getConfig, now })
       let fresh = false;
       if (!target) {
         try {
+          const started = generation;
           await setup();
+          if (started !== generation) {
+            // Reconfigured during the setup: its result belongs to the old config.
+            target = null;
+            return false;
+          }
           fresh = true;
         } catch (err) {
           target = null;

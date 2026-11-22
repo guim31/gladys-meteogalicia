@@ -622,3 +622,22 @@ test('a reconfiguration during a cycle does not keep the data of the old municip
   assert.equal(world.app.service.snapshot().forecast, null, 'the late answer is ignored');
   await world.app.stop();
 });
+
+test('a reconfiguration during the setup does not keep the old station', async () => {
+  const world = await createWorld({ connect: false });
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  const recorded = world.meteo.answers.stations;
+  world.meteo.answers.stations = async () => {
+    await gate;
+    return recorded;
+  };
+  const oldSetup = world.app.service.cycle();
+  world.app.service.reset();
+  release();
+  assert.equal(await oldSetup, false);
+  assert.equal(world.app.service.snapshot().target, null);
+  await world.app.stop();
+});
