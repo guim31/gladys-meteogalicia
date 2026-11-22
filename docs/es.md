@@ -85,7 +85,7 @@ aviso más alto anunciado para él:
 | Función               | Unidad | Nota                                                              |
 | --------------------- | ------ | ----------------------------------------------------------------- |
 | Tiempo hoy            | texto  | Cielo más representativo del día, por ejemplo «Chubascos débiles» |
-| Mínima hoy            | °C     | Días en la zona horaria de Gladys                                 |
+| Mínima hoy            | °C     | Días de Galicia (Europe/Madrid)                                   |
 | Máxima hoy            | °C     |                                                                   |
 | Índice UV hoy         | índice | Índice UV máximo previsto                                         |
 | Tiempo mañana         | texto  |                                                                   |
@@ -116,7 +116,7 @@ la previsión de hoy y mañana.
 
 **Nivel de aviso de MeteoGalicia elevado** se activa cuando el nivel de aviso más alto del
 municipio sube para un día (hoy, mañana o pasado mañana): de ninguno a amarillo, de amarillo a
-naranja… Una vez por día y por nivel, en cuanto se anuncia. Un reinicio no lo vuelve a activar, ni
+naranja… Una vez por día y por nivel, en cuanto se anuncia (un nivel que baja y vuelve a subir el mismo día no lo activa de nuevo). Un reinicio no lo vuelve a activar, ni
 el día siguiente cuando «mañana» pasa a ser «hoy». El primer arranque (y el primero tras un cambio de
 municipio) solo toma nota de los niveles ya anunciados.
 

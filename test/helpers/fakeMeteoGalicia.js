@@ -53,7 +53,7 @@ export function warningLevels(id, levels = [0, 0, 0]) {
  */
 export function createFakeMeteoGalicia({ now = () => NOW } = {}) {
   const requests = [];
-  // Answers by endpoint: a JSON text, a function of the id, an Error, or { status }.
+  // Answers by endpoint: a JSON text, a function of the id (may be async), an Error, or { status }.
   const answers = {
     stations: FIXTURES.stations,
     concellos: FIXTURES.concellos,
@@ -97,7 +97,7 @@ export function createFakeMeteoGalicia({ now = () => NOW } = {}) {
     if (answer && typeof answer === 'object' && answer.status) {
       return new Response(answer.body ?? 'error', { status: answer.status });
     }
-    const body = typeof answer === 'function' ? answer(id) : answer;
+    const body = typeof answer === 'function' ? await answer(id) : answer;
     if (body === undefined) {
       return new Response('not found', { status: 404 });
     }

@@ -13,7 +13,7 @@ import {
   value,
 } from '../src/meteogalicia/model.js';
 import { createMeteoGaliciaClient } from '../src/meteogalicia/client.js';
-import { FIXTURES, NOW, TIME_ZONE } from './helpers/fakeMeteoGalicia.js';
+import { FIXTURES, NOW } from './helpers/fakeMeteoGalicia.js';
 
 const stations = parseStations(JSON.parse(FIXTURES.stations));
 const concellos = parseConcellos(JSON.parse(FIXTURES.concellos));
@@ -80,7 +80,7 @@ test('the forecast of a municipality, today and tomorrow in the Gladys time zone
   const forecast = parseForecast(JSON.parse(FIXTURES.forecasts[27028]));
   assert.equal(forecast.name, 'Lugo');
   assert.equal(forecast.days.length, 4);
-  const { today, tomorrow } = forecastDays(forecast, NOW, TIME_ZONE);
+  const { today, tomorrow } = forecastDays(forecast, NOW);
   assert.deepEqual(today, {
     date: '2026-11-22',
     sky: 'light_showers',
@@ -135,4 +135,11 @@ test('the client: HTTP errors, non-JSON answers and network failures are errors'
     }).stations(),
     /servizos\.meteogalicia\.gal unreachable \(fetch failed\)/,
   );
+});
+
+test('today is the Galician day, whatever the zone of Gladys', () => {
+  const forecast = parseForecast(JSON.parse(FIXTURES.forecasts[27028]));
+  // 23:30 UTC on the 22nd is already the 23rd in Galicia.
+  const { today } = forecastDays(forecast, Date.parse('2026-11-22T23:30:00Z'));
+  assert.equal(today.date, '2026-11-23');
 });

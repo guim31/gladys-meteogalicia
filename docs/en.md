@@ -83,7 +83,7 @@ warning level announced for it:
 | Feature                | Unit   | Note                                                             |
 | ---------------------- | ------ | ---------------------------------------------------------------- |
 | Weather today          | text   | Most representative sky of the day, e.g. "Light showers"         |
-| Minimum today          | °C     | Days in the time zone of Gladys                                  |
+| Minimum today          | °C     | Galician days (Europe/Madrid)                                    |
 | Maximum today          | °C     |                                                                  |
 | UV index today         | index  | Highest UV index forecast                                        |
 | Weather tomorrow       | text   |                                                                  |
@@ -114,7 +114,7 @@ forecast of today and tomorrow.
 
 **MeteoGalicia warning level raised** fires when the highest warning level of the municipality
 rises for a day (today, tomorrow or the day after): from none to yellow, from yellow to orange…
-Once per day and per level, as soon as it is announced. A restart does not fire it again, nor the
+Once per day and per level, as soon as it is announced (a level that goes down and back up the same day does not fire again). A restart does not fire it again, nor the
 next day when "tomorrow" becomes "today". The very first start (and the first start after a
 change of municipality) only takes note of the levels already announced.
 

@@ -149,7 +149,7 @@ export function buildWeatherContent(snapshot, { settings, language, units, now, 
     );
   }
 
-  const days = forecast ? forecastDays(forecast, now, timeZone) : null;
+  const days = forecast ? forecastDays(forecast, now) : null;
   if (!hide.has('chart')) {
     const coming = (days?.all ?? []).filter(
       (day) => day.date >= (days.today?.date ?? '') && day.min !== null && day.max !== null,

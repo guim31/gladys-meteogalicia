@@ -122,7 +122,7 @@ export function registerHandlers(gladys, options = {}) {
   const getConfig = () => config;
 
   const client = createMeteoGaliciaClient({ fetch: options.fetch, logger: logger.child('http') });
-  const service = createService({ gladys, client, store, logger, getConfig, now, timeZone });
+  const service = createService({ gladys, client, store, logger, getConfig, now });
 
   // The widget is nudged when what it shows changed, not after every refresh.
   let shown = null;

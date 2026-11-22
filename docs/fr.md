@@ -84,7 +84,7 @@ d'avis le plus élevé annoncé pour elle :
 | Fonctionnalité            | Unité  | Remarque                                                                    |
 | ------------------------- | ------ | --------------------------------------------------------------------------- |
 | Temps aujourd'hui         | texte  | Ciel le plus représentatif de la journée, par exemple « Averses faibles »   |
-| Minimale aujourd'hui      | °C     | Jours dans le fuseau horaire de Gladys                                      |
+| Minimale aujourd'hui      | °C     | Jours de Galice (Europe/Madrid)                                             |
 | Maximale aujourd'hui      | °C     |                                                                             |
 | Indice UV aujourd'hui     | indice | Indice UV maximal prévu                                                     |
 | Temps demain              | texte  |                                                                             |
@@ -115,7 +115,7 @@ ou les prévisions du jour et du lendemain.
 
 **Niveau d'avis MeteoGalicia relevé** se déclenche quand le niveau d'avis le plus élevé de la
 commune monte pour un jour (aujourd'hui, demain ou après-demain) : d'aucun à jaune, de jaune à
-orange… Une fois par jour et par niveau, dès l'annonce. Un redémarrage ne le redéclenche pas, ni le
+orange… Une fois par jour et par niveau, dès l'annonce (un niveau qui redescend puis remonte le même jour ne le redéclenche pas). Un redémarrage ne le redéclenche pas, ni le
 lendemain quand « demain » devient « aujourd'hui ». Le tout premier démarrage (et le premier après un
 changement de commune) ne fait que noter les niveaux déjà annoncés.
 

@@ -149,12 +149,12 @@ export function concelloStates(
   gladys,
   concello,
   { forecast, levels },
-  { now, language, timeZone },
+  { now, language },
 ) {
   const ids = gladys.externalIds(DEVICE_TYPES.CONCELLO, concello.id);
   const states = [];
   if (forecast) {
-    const { today, tomorrow } = forecastDays(forecast, now, timeZone);
+    const { today, tomorrow } = forecastDays(forecast, now);
     states.push(
       text(ids, 'condition', today && skyName(today.sky, language)),
       state(ids, 'today_min', today?.min),

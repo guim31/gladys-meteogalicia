@@ -13,6 +13,7 @@
 // -----------------------------------------------------------------------------
 
 import {
+  SERVICE_TIME_ZONE,
   WARNING_LEVELS,
   addDays,
   findConcello,
@@ -41,7 +42,7 @@ export const WARNING_TRIGGER = 'warning_raised';
 export const WARNING_DAYS = ['today', 'tomorrow', 'day_after'];
 
 // The service works in Galician days, whatever the zone of Gladys.
-export const SERVICE_TIME_ZONE = 'Europe/Madrid';
+export { SERVICE_TIME_ZONE };
 
 const HOUR = 3600 * 1000;
 export const LISTS_MAX_AGE = 24 * HOUR;
@@ -66,9 +67,8 @@ const formatCoordinates = (lat, lon) => `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
  * @param {object} options.logger
  * @param {() => object} options.getConfig the current normalized config
  * @param {() => number} options.now
- * @param {string} [options.timeZone] IANA zone of Gladys (TZ), system zone if unset
  */
-export function createService({ gladys, client, store, logger, getConfig, now, timeZone }) {
+export function createService({ gladys, client, store, logger, getConfig, now }) {
   const issues = createIssueLog(logger);
   let stationList = null; // { list, at }
   let concelloList = null; // { list, at }
@@ -78,6 +78,8 @@ export function createService({ gladys, client, store, logger, getConfig, now, t
   let warnings = null; // { levels: [{ day, date, level }], at }
   let seen; // { concello, levels: { [date]: level } } | null, undefined until loaded
   let lastStatus = null;
+  // Bumped when the config changes: a read started before is ignored.
+  let generation = 0;
   // The last error of each failing source, for the check action.
   const lastErrors = new Map();
 
@@ -188,8 +190,13 @@ export function createService({ gladys, client, store, logger, getConfig, now, t
       // The municipality of the station: no position of the municipalities
       // is published, the station list names its municipality.
       concello = findConcello(await concellos(), station.concello);
+      if (!concello) {
+        problem = 'concelloUnknown';
+      }
     }
     observation = null;
+    forecast = null;
+    warnings = null;
     if (station) {
       // Read now: the device publishes only the measures the station takes.
       // A failure here is retried by the cycle; the device keeps the common measures.
@@ -219,32 +226,55 @@ export function createService({ gladys, client, store, logger, getConfig, now, t
   }
 
   async function readObservation() {
+    // Taken before the await: a configuration change may reset the target meanwhile.
     const { station } = target;
+    const started = generation;
     const reading = parseObservation(await client.observation(station.id));
     if (!reading) {
       throw new Error(`station ${station.id} sent no reading`);
     }
+    if (started !== generation) {
+      return;
+    }
     observation = reading;
+    // A measure invalid at setup (or new) gets its feature now: the device is
+    // published again, and Gladys offers to update it.
+    const missing = Object.keys(reading.values).filter((key) => !station.features.includes(key));
+    if (missing.length > 0) {
+      station.features = stationFeatureKeys(station, {
+        values: Object.fromEntries([...station.features, ...missing].map((key) => [key, 0])),
+      });
+      logger.info(`Station ${station.id} now measures ${missing.join(', ')}`);
+      await gladys.publishDiscoveredDevices(
+        buildDevices(gladys, { ...target, language: getConfig().language }),
+      );
+    }
   }
 
   async function readForecast() {
-    // Taken before the await: a configuration change may reset the target meanwhile.
     const { concello } = target;
+    const started = generation;
     const data = parseForecast(await client.forecast(concello.id));
     if (!data) {
       throw new Error(`no forecast for municipality ${concello.id}`);
     }
-    forecast = { data, at: now() };
+    if (started === generation) {
+      forecast = { data, at: now() };
+    }
   }
 
   async function readWarnings() {
     const { concello } = target;
+    const started = generation;
     const levels = parseWarningLevels(await client.warningLevels(concello.id), concello.id);
     const today = localDay(now(), SERVICE_TIME_ZONE);
-    warnings = {
-      levels: levels.map((entry) => ({ ...entry, date: addDays(today, entry.day) })),
-      at: now(),
-    };
+    if (started === generation) {
+      warnings = {
+        concello: concello.id,
+        levels: levels.map((entry) => ({ ...entry, date: addDays(today, entry.day) })),
+        at: now(),
+      };
+    }
   }
 
   /** Run one source, logging a lasting failure once; resolves true on success. */
@@ -294,7 +324,7 @@ export function createService({ gladys, client, store, logger, getConfig, now, t
           gladys,
           concello,
           { forecast: forecast?.data, levels: warnings?.levels },
-          { now: now(), language: config.language, timeZone },
+          { now: now(), language: config.language },
         ),
       );
     }
@@ -316,7 +346,7 @@ export function createService({ gladys, client, store, logger, getConfig, now, t
    * install does not fire for warnings issued before it.
    */
   async function announceWarnings() {
-    if (!warnings || !target?.concello) {
+    if (!warnings || !target?.concello || warnings.concello !== target.concello.id) {
       return;
     }
     if (seen === undefined) {
@@ -341,6 +371,32 @@ export function createService({ gladys, client, store, logger, getConfig, now, t
         delete next[date];
       }
     }
+    if (baseline) {
+      logger.debug(`Warning levels noted for municipality ${concello.id}, first run: no event`);
+    } else {
+      const language = getConfig().language;
+      for (const entry of raised) {
+        const levelKey = WARNING_LEVELS[entry.level];
+        const dayKey = WARNING_DAYS[entry.day] ?? 'day_after';
+        logger.info(`Warning level raised: ${levelKey} on ${entry.date}`);
+        try {
+          await gladys.publishSceneEvent(WARNING_TRIGGER, {
+            level: levelKey,
+            day: dayKey,
+            level_number: entry.level,
+            level_label: WARNING_LEVEL_NAMES[language][levelKey],
+            day_label: WARNING_DAY_NAMES[language][dayKey],
+            date: formatDay(entry.date, language),
+            is_update: entry.update,
+            concello: concello.name,
+          });
+        } catch (err) {
+          // Not recorded as announced: tried again at the next cycle.
+          logger.error(`Scene event refused (${err.message})`);
+          next[entry.date] = previous[entry.date] ?? 0;
+        }
+      }
+    }
     const updated = { concello: concello.id, levels: next };
     const changed = JSON.stringify(updated) !== JSON.stringify(seen);
     seen = updated;
@@ -349,33 +405,12 @@ export function createService({ gladys, client, store, logger, getConfig, now, t
         .save({ seen })
         .catch((err) => issues.fail('store', `Cannot write /data (${err.message})`));
     }
-    if (baseline) {
-      logger.debug(`Warning levels noted for municipality ${concello.id}, first run: no event`);
-      return;
-    }
-    const language = getConfig().language;
-    for (const entry of raised) {
-      const levelKey = WARNING_LEVELS[entry.level];
-      const dayKey = WARNING_DAYS[entry.day] ?? 'day_after';
-      logger.info(`Warning level raised: ${levelKey} on ${entry.date}`);
-      await gladys
-        .publishSceneEvent(WARNING_TRIGGER, {
-          level: levelKey,
-          day: dayKey,
-          level_number: entry.level,
-          level_label: WARNING_LEVEL_NAMES[language][levelKey],
-          day_label: WARNING_DAY_NAMES[language][dayKey],
-          date: formatDay(entry.date, language),
-          is_update: entry.update,
-          concello: concello.name,
-        })
-        .catch((err) => logger.error(`Scene event refused (${err.message})`));
-    }
   }
 
   return {
     /** Forget everything read: the config changed. */
     reset() {
+      generation += 1;
       target = null;
       observation = null;
       forecast = null;
@@ -497,6 +532,7 @@ export function createService({ gladys, client, store, logger, getConfig, now, t
 
     /** Read every source now (configuration action). */
     async check() {
+      generation += 1;
       target = null;
       observation = null;
       forecast = null;

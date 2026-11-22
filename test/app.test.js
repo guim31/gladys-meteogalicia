@@ -560,3 +560,65 @@ test('feature names follow the configured language', async () => {
     await world.app.stop();
   }
 });
+
+test('a scene event Gladys refuses is not recorded: it fires at the next cycle', async () => {
+  const world = await createWorld();
+  const publish = world.gladys.publishSceneEvent.bind(world.gladys);
+  let refuse = true;
+  world.gladys.publishSceneEvent = async (...args) => {
+    if (refuse) {
+      throw new Error('HTTP 503');
+    }
+    return publish(...args);
+  };
+  levels(world, [0, 2, 0]);
+  await world.refresh();
+  assert.equal(world.gladys.fake.sceneEvents.length, 0);
+  refuse = false;
+  await world.refresh();
+  assert.equal(world.gladys.fake.sceneEvents.length, 1);
+  await world.refresh();
+  assert.equal(world.gladys.fake.sceneEvents.length, 1);
+  await world.app.stop();
+});
+
+test('a measure invalid at setup gets its feature once it is valid again', async () => {
+  const world = await createWorld({ connect: false });
+  const recorded = world.meteo.answers.observation;
+  world.meteo.answers.observation = (id) =>
+    recorded(id).replace(
+      /("codigoParametro":"VV_RACHA_10m","lnCodigoValidacion":)1/,
+      (_, start) => `${start}2`,
+    );
+  await world.gladys.connect();
+  await world.app.ready;
+  const keys = () =>
+    world.gladys.fake.discoveredDevices[0].features.map((f) => f.external_id.split(':').pop());
+  assert.ok(!keys().includes('wind_gust'));
+  world.meteo.answers.observation = recorded;
+  await world.refresh();
+  assert.ok(keys().includes('wind_gust'));
+  await world.app.stop();
+});
+
+test('a reconfiguration during a cycle does not keep the data of the old municipality', async () => {
+  const world = await createWorld();
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  const recorded = world.meteo.answers.forecast;
+  // The forecast of Lugo arrives only after the configuration changed.
+  world.meteo.answers.forecast = async (id) => {
+    if (id === '27028') {
+      await gate;
+    }
+    return recorded(id);
+  };
+  const oldCycle = world.app.service.cycle({ forceForecast: true });
+  world.app.service.reset();
+  release();
+  await oldCycle;
+  assert.equal(world.app.service.snapshot().forecast, null, 'the late answer is ignored');
+  await world.app.stop();
+});

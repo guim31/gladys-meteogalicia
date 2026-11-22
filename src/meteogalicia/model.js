@@ -295,9 +295,15 @@ export function addDays(date, offset) {
   return new Date(Date.UTC(year, month - 1, day + offset)).toISOString().slice(0, 10);
 }
 
-/** Today's and tomorrow's forecast, null when not published. */
-export function forecastDays(forecast, now, timeZone) {
-  const today = localDay(now, timeZone);
+/** The zone of the days of MeteoGalicia (forecast dates, warning days). */
+export const SERVICE_TIME_ZONE = 'Europe/Madrid';
+
+/**
+ * Today's and tomorrow's forecast, null when not published. "Today" is the
+ * Galician day the forecast dates refer to, whatever the zone of Gladys.
+ */
+export function forecastDays(forecast, now) {
+  const today = localDay(now, SERVICE_TIME_ZONE);
   // The next calendar day, not now + 24 h: a DST night has 23 or 25 hours.
   const tomorrow = addDays(today, 1);
   const day = (date) => forecast?.days.find((entry) => entry.date === date) ?? null;

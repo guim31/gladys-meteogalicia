@@ -84,7 +84,7 @@ für sie angekündigte Warnstufe:
 | Funktion         | Einheit | Hinweis                                                           |
 | ---------------- | ------- | ----------------------------------------------------------------- |
 | Wetter heute     | Text    | Typischster Himmel des Tages, zum Beispiel „Leichte Schauer“      |
-| Minimum heute    | °C      | Tage in der Zeitzone von Gladys                                   |
+| Minimum heute    | °C      | Galicische Tage (Europe/Madrid)                                   |
 | Maximum heute    | °C      |                                                                   |
 | UV-Index heute   | Index   | Höchster vorhergesagter UV-Index                                  |
 | Wetter morgen    | Text    |                                                                   |
@@ -115,7 +115,7 @@ Warnstufen oder die Vorhersage für heute und morgen aus.
 
 **MeteoGalicia-Warnstufe erhöht** löst aus, wenn die höchste Warnstufe der Gemeinde für einen Tag
 (heute, morgen oder übermorgen) steigt: von keiner auf gelb, von gelb auf orange… Einmal pro Tag und
-Stufe, sobald sie angekündigt wird. Ein Neustart löst nicht erneut aus, ebenso wenig der nächste
+Stufe, sobald sie angekündigt wird (eine Stufe, die am selben Tag sinkt und wieder steigt, löst nicht erneut aus). Ein Neustart löst nicht erneut aus, ebenso wenig der nächste
 Tag, wenn aus „morgen“ „heute“ wird. Der allererste Start (und der erste nach einem Wechsel der
 Gemeinde) merkt sich nur die bereits angekündigten Stufen.
 
